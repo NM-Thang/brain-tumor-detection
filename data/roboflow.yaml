@@ -1,0 +1,16 @@
+train: /kaggle/input/roboflow/dataset_clean/train/images
+val: /kaggle/input/roboflow/dataset_clean/valid/images
+test: /kaggle/input/roboflow/dataset_clean/test/images
+
+nc: 3
+names: 
+  0: label_0
+  1: label_1
+  2: label_2
+
+roboflow:
+  workspace: roboflow-100
+  project: brain-tumor-m2pbp
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/roboflow-100/brain-tumor-m2pbp/dataset/2

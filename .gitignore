@@ -50,3 +50,5 @@ environment/
 .idea/
 .DS_Store
 Thumbs.db
+
+# export GITHUB_TOKEN=$(python3 -c "from kaggle_secrets import UserSecretsClient; print(UserSecretsClient().get_secret('GH_TOKEN'))")
