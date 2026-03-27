@@ -1,0 +1,51 @@
+# 1. datasets
+data/dataset_clean/
+data/roboflow/
+coco.yaml
+
+# 2. models & checkpoints
+checkpoints/
+weights/
+saved_models/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+*.keras
+*.pb
+*.pkl
+*.joblib
+*.onnx
+
+# 3. logs & outputs
+logs/
+runs/
+tb_logs/
+wandb/
+mlruns/
+outputs/
+results/
+
+# 4. jupyter notebook
+notebooks/
+tools/
+.ipynb_checkpoints/
+
+# 5. python & environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+env/
+miniconda3/
+.env
+environment/
+
+# 6. ide & os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

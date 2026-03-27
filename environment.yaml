@@ -1,0 +1,36 @@
+name: scc_yolo
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+
+  # PyTorch ecosystem (GPU - CUDA 12.1)
+  - pytorch=2.1.0
+  - torchvision=0.16.0
+  - pytorch-cuda=12.1
+
+  # Core libraries (let solver pick compatible versions)
+  - numpy>=1.21
+  - scipy>=1.7
+  - matplotlib>=3.2.2
+  - pillow>=7.1.2
+  - psutil
+  - pyyaml>=5.3.1
+  - requests>=2.23.0
+  - tqdm>=4.64.0
+  - pandas>=1.1.4
+  - seaborn>=0.11.0
+  - tensorboard>=2.4.1
+  - scikit-learn
+  # Pip packages
+  - pip:
+    - gitpython
+    - ipython
+    - opencv-python>=4.1.1
+    - thop>=0.1.1
+    - albumentations>=1.0.3
+    - pycocotools>=2.0
