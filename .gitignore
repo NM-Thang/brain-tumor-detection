@@ -2,6 +2,7 @@
 data/dataset_clean/
 data/roboflow/
 coco.yaml
+*.zip
 
 # 2. models & checkpoints
 checkpoints/
