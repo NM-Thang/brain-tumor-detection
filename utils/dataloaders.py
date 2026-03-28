@@ -113,10 +113,13 @@ def create_dataloader(path,
                       min_items=0,
                       prefix='',
                       shuffle=False):
+    
     if rect and shuffle:
         LOGGER.warning('WARNING ⚠️ --rect is incompatible with DataLoader shuffle, setting shuffle=False')
         shuffle = False
-    with torch_distributed_zero_first(rank):  # init dataset *.cache only once if DDP
+
+    # init dataset with
+    with torch_distributed_zero_first(rank):  
         dataset = LoadImagesAndLabels(
             path,
             imgsz,
@@ -132,14 +135,19 @@ def create_dataloader(path,
             min_items=min_items,
             prefix=prefix)
 
+    # calculate batch size and number of workers
     batch_size = min(batch_size, len(dataset))
     nd = torch.cuda.device_count()  # number of CUDA devices
-    nw = min([os.cpu_count() // max(nd, 1), batch_size if batch_size > 1 else 0, workers])  # number of workers
-    sampler = None if rank == -1 else distributed.DistributedSampler(dataset, shuffle=shuffle)
-    #loader = DataLoader if image_weights else InfiniteDataLoader  # only DataLoader allows for attribute updates
+    nw = min([os.cpu_count() // max(nd, 1), 
+              batch_size if batch_size > 1 else 0, 
+              workers])  # number of workers
+
+    # if DDP, use distributed sampler 
+    sampler = None if rank == -1 else distributed.DistributedSampler(dataset, shuffle=shuffle) 
     loader = DataLoader if image_weights or close_mosaic else InfiniteDataLoader
     generator = torch.Generator()
     generator.manual_seed(6148914691236517205 + RANK)
+
     return loader(dataset,
                   batch_size=batch_size,
                   shuffle=shuffle and sampler is None,
@@ -428,7 +436,6 @@ def img2label_paths(img_paths):
 
 
 class LoadImagesAndLabels(Dataset):
-    # YOLOv5 train_loader/val_loader, loads images and labels for training and validation
     cache_version = 0.6  # dataset labels *.cache version
     rand_interp_methods = [cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_LANCZOS4]
 
@@ -639,12 +646,6 @@ class LoadImagesAndLabels(Dataset):
 
     def __len__(self):
         return len(self.im_files)
-
-    # def __iter__(self):
-    #     self.count = -1
-    #     print('ran dataset iter')
-    #     #self.shuffled_vector = np.random.permutation(self.nF) if self.augment else np.arange(self.nF)
-    #     return self
 
     def __getitem__(self, index):
         index = self.indices[index]  # linear, shuffled, or image_weights
@@ -1203,7 +1204,9 @@ def create_classification_dataloader(path,
         dataset = ClassificationDataset(root=path, imgsz=imgsz, augment=augment, cache=cache)
     batch_size = min(batch_size, len(dataset))
     nd = torch.cuda.device_count()
-    nw = min([os.cpu_count() // max(nd, 1), batch_size if batch_size > 1 else 0, workers])
+    nw = min([os.cpu_count() // max(nd, 1), 
+              batch_size if batch_size > 1 else 0, 
+              workers])
     sampler = None if rank == -1 else distributed.DistributedSampler(dataset, shuffle=shuffle)
     generator = torch.Generator()
     generator.manual_seed(6148914691236517205 + RANK)
