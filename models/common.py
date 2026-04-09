@@ -30,6 +30,9 @@ from utils.general import (LOGGER, ROOT, Profile, check_requirements, check_suff
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import copy_attr, smart_inference_mode
 
+import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
+
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
     # Pad to 'same' shape outputs
@@ -308,6 +311,7 @@ class RepNBottleneck(nn.Module):
     def forward(self, x):
         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))  # if in channel = out channel and skip connection = True: residual connection
 
+
 class Res(nn.Module):
     # ResNet bottleneck
     def __init__(self, c1, c2, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, shortcut, groups, expansion
@@ -374,11 +378,11 @@ class RepNCSP(nn.Module):
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number RepNBottleneck, skip connection (residual), groups(conv), expansion
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, 1, 1)   # split path 1: cross stage connection
-        self.cv2 = Conv(c1, c_, 1, 1)   # split path 2: main path
+        self.cv1 = Conv(c1, c_, 1, 1)   # split path 2: main path
+        self.cv2 = Conv(c1, c_, 1, 1)   # split path 1: cross stage connection
         self.cv3 = Conv(2 * c_, c2, 1)  # optional act=FReLU(c2)  # transition layer fuse
-        self.m = nn.Sequential(*(RepNBottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n))) #in channel = out channel = c_
-
+        self.m = nn.Sequential(*(RepNBottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n))) #in channel = out channel = c_, blocks in CSPNet, # Bottleneck block to reduce parameters and FLOPs.
+        
     def forward(self, x):
         return self.cv3(torch.cat((self.m(self.cv1(x)), self.cv2(x)), 1))
 
@@ -488,10 +492,6 @@ class SPPF(nn.Module):
             y1 = self.m(x)
             y2 = self.m(y1)
             return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
-
-
-import torch.nn.functional as F
-from torch.nn.modules.utils import _pair
     
     
 class ReOrg(nn.Module):
@@ -557,6 +557,7 @@ class Silence(nn.Module):
         return x
 
 ##### ScConv #####
+
 class GroupBatchnorm2d(nn.Module):
     def __init__(self, c_num:int, 
                  group_num:int = 16, 
@@ -717,10 +718,10 @@ class RepNCSPELAN4(nn.Module):
     def __init__(self, c1, c2, c3, c4, c5=1):  # ch_in, ch_out, ch_split, ch_mid, groups, expansion
         super().__init__()
         self.c = c3//2  # split channel: create two branch
-        self.cv1 = Conv(c1, c3, 1, 1)
-        self.cv2 = nn.Sequential(RepNCSP(c3//2, c4, c5), Conv(c4, c4, 3, 1))
-        self.cv3 = nn.Sequential(RepNCSP(c4, c4, c5), Conv(c4, c4, 3, 1))
-        self.cv4 = Conv(c3+(2*c4), c2, 1, 1)
+        self.cv1 = Conv(c1, c3, 1, 1)   # transition 1
+        self.cv2 = nn.Sequential(RepNCSP(c3//2, c4, c5), Conv(c4, c4, 3, 1)) # block G-ELAN
+        self.cv3 = nn.Sequential(RepNCSP(c4, c4, c5), Conv(c4, c4, 3, 1)) # block G-ELAN
+        self.cv4 = Conv(c3+(2*c4), c2, 1, 1) # transition 3
 
     def forward(self, x): 
         y = list(self.cv1(x).chunk(2, 1))
